@@ -1,54 +1,30 @@
-import axios from "axios";
-import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
+import KJV from "./kjv";
+import NIV from "./niv";
 
-type Verse = { verse_num: number; text: string };
-type Chapter = { chapter_num: number; verses: Verse[] };
-type Book = { name: string; chapters: Chapter[] };
+export type Verse = { verse_num: number; text: string };
+export type Chapter = { chapter_num: number; verses: Verse[] };
+export type Book = { name: string; chapters: Chapter[] };
 
-const BIBLE: Book[] = [];
-const VERSION = "KJV";
+export type BibleScraperFn = (arg: readonly [string, URL]) => Promise<[string, Book[]]>;
 
-async function main(url: URL) {
-  const query = url.searchParams.get("search")!.split(" ");
-  const chapter: Chapter = { chapter_num: parseInt(query.pop()!), verses: [] };
-  const book_name = query.join(" ");
+const start_url = (VERSION: string) =>
+  [
+    VERSION,
+    new URL("https://www.biblegateway.com/passage/?search=Genesis%201&version=" + VERSION),
+  ] as const;
 
-  console.log(book_name, chapter.chapter_num);
-
-  const book = BIBLE.find((book) => book.name === book_name);
-  if (book) {
-    book.chapters.push(chapter);
-  } else {
-    BIBLE.push({ name: book_name, chapters: [chapter] });
-  }
-
-  const { data: raw_html } = await axios.get(url.toString());
-  const $ = cheerio.load(raw_html);
-
-  const passage_paragraphs = $("div .passage-content").children("div").children("p");
-
-  for (let x = 0; x < passage_paragraphs.length; x++) {
-    const p = passage_paragraphs[x].lastChild! as cheerio.Element;
-    const _verse = p.children.at(-1);
-    const verse = $(_verse).text();
-    chapter.verses.push({ verse_num: x + 1, text: verse });
-  }
-
-  const next_chapter_link = $("div .prev-next").children()[1].attribs["href"];
-
-  if (next_chapter_link) {
-    return main(new URL(url.origin + next_chapter_link));
-  }
+async function main() {
+  await KJV(start_url("KJV")).then(WriteBible);
+  await NIV(start_url("NIV")).then(WriteBible);
 }
 
-const start_url = new URL(
-  "https://www.biblegateway.com/passage/?search=Genesis%201&version=" + VERSION
-);
-main(start_url).then(async () => {
+main();
+
+async function WriteBible([VERSION, BIBLE]: readonly [string, Book[]]) {
   await fs.writeFile(
     path.join(process.cwd(), "translations", `${VERSION}.json`),
     JSON.stringify(BIBLE)
   );
-});
+}
