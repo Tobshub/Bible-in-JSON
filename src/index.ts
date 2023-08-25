@@ -1,23 +1,14 @@
 import fs from "fs/promises";
 import path from "path";
-import KJV from "./kjv";
-import NIV from "./niv";
+import { scrape } from "./scrape";
+import { BOOKS } from "./book";
 
 export type Verse = { verse_num: number; text: string };
 export type Chapter = { chapter_num: number; verses: Verse[] };
-export type Book = { name: string; chapters: Chapter[] };
-
-export type BibleScraperFn = (arg: readonly [string, URL]) => Promise<[string, Book[]]>;
-
-const start_url = (VERSION: string) =>
-  [
-    VERSION,
-    new URL("https://www.biblegateway.com/passage/?search=Genesis%201&version=" + VERSION),
-  ] as const;
+export type Book = { name: keyof typeof BOOKS; chapters: Chapter[] };
 
 async function main() {
-  await KJV(start_url("KJV")).then(WriteBible);
-  await NIV(start_url("NIV")).then(WriteBible);
+  await scrape("KJV").then((res) => res && WriteBible(res));
 }
 
 main();
