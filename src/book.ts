@@ -20,7 +20,7 @@ export const BOOKS = {
   Psalms: 150,
   Proverbs: 31,
   Ecclesiastes: 12,
-  Songofsolomon: 8,
+  "Songs of Solomon": 8,
   Isaiah: 66,
   Jeremiah: 52,
   Lamentations: 5,
