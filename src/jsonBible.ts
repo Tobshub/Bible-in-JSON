@@ -3,7 +3,7 @@ import { BOOKS } from "./book";
 
 const search_url = "https://jsonbible.com/search/verses.php?json=";
 
-export async function scrape(translation: string) {
+export async function jsonBibleFetch(translation: string) {
   const BIBLE: Book[] = [];
 
   for (const current_book in BOOKS) {
